@@ -73,10 +73,13 @@ leitura que vêm antes), com a resposta de cada uma.
 
 ## Como conseguir a chave
 
-A chave é emitida pelo **administrador da sua conta** no SIGA, para uma pessoa —
-e carrega **as permissões do perfil dessa pessoa**. Por isso a recomendação é
-criar uma *pessoa de serviço* (`integracao@suaempresa.com.br`) com um perfil que
-tenha só o que a integração precisa.
+A chave é emitida pelo **administrador da sua conta** no SIGA e fica **no nome de
+uma pessoa real** — com CPF, e com as permissões do perfil dela.
+
+Isso é deliberado: toda chamada da integração fica ligada a alguém que responde
+por ela. Quando essa pessoa sai da empresa ou troca de função, a integração é
+**transferida** — o administrador emite a chave para o novo responsável e revoga
+a anterior.
 
 O passo a passo, as permissões mínimas e o ciclo de vida estão em
 [Autenticação](/autenticacao/).

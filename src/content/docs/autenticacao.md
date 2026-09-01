@@ -28,11 +28,25 @@ Ela executa com **exatamente as permissões do perfil de acesso da pessoa** dona
 da chave. Uma chave emitida para alguém `admin` faz tudo o que um admin faz.
 :::
 
-Por isso a recomendação é **uma pessoa de serviço**: crie no SIGA um cadastro do
-tipo `integracao@suaempresa.com.br`, com um perfil de acesso que tenha só as
-permissões da lista abaixo, e emita a chave para ela. Fica auditável (dá para ver
-o que a integração fez, separado do que as pessoas fizeram) e revogável sem
-afetar ninguém.
+## A chave tem um responsável, e isso é de propósito
+
+A chave é emitida no nome de **uma pessoa real do seu quadro** — com CPF no
+cadastro. Não usamos "usuário de serviço" sem dono: conta sem responsável vira
+órfã, e um dia alguém olha a lista de acessos, não sabe o que aquilo é e desliga
+— junto com a sua integração.
+
+Com uma pessoa no nome, toda chamada da integração é rastreável até quem responde
+por ela, e a auditoria (`chamadas_api_key`) tem a quem perguntar.
+
+Duas recomendações práticas:
+
+1. **Perfil enxuto.** Emita para alguém cujo perfil de acesso tenha só as
+   permissões da lista abaixo. Se a pessoa precisa ser `admin` para o trabalho
+   dela, peça ao administrador um perfil separado para a integração.
+2. **Transferência, não abandono.** Quando o responsável sair da empresa ou trocar
+   de função, **transfira**: o administrador emite a chave para o novo responsável
+   e revoga a anterior. Chave órfã é chave que ninguém sabe desligar com
+   segurança.
 
 ## Permissões mínimas para o fluxo de onboarding
 
