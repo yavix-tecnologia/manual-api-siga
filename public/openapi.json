@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "SIGA API",
-    "version": "0.113.0",
+    "version": "0.116.0",
     "description": "API do **SIGA** — Segurança Integrada, Gestão e Automação.\n\n## Autenticação\n\nSão **três credenciais** em dois headers. Envie **uma** delas:\n\n| Credencial | Header | Alcance |\n|---|---|---|\n| **API Token de pessoa** (`yvx_...`) | `X-API-Key: yvx_...` | **Toda a API.** É o caminho de integração |\n| **JWT (RS256)** | `Authorization: Bearer <jwt>` | Toda a API. É o caminho da tela |\n| **Token estático de leads** | `X-API-Token: <segredo>` | Só `POST /api/v1/leads` |\n\n### API Token — integração máquina a máquina\n\nO `X-API-Key` é o token **principal** para integrar com o SIGA sem usuário e\nsenha. Ele vale em **qualquer endpoint** desta documentação, com exatamente as\npermissões do perfil de acesso da pessoa dona do token — as mesmas regras que\nvalem para o JWT. Não existe endpoint reservado ao JWT.\n\n```http\nPOST /api/v1/pessoas HTTP/1.1\nHost: api-sst.yavix.app\nX-API-Key: yvx_0QNQBJRD9JKVWXYZ_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0\nContent-Type: application/json\n```\n\n**Ciclo de vida do token**\n\n- **Emissão:** `POST /api/v1/pessoas/{id}/token-api` — exige role `admin` ou\n  `gerente_sst` **e** a permissão `pessoas:token_api`. O segredo aparece\n  **uma única vez**; guarde no ato.\n- **Validade:** opcional. Sem data o token não expira — a revogação é o\n  controle. Com data, o máximo é 365 dias.\n- **Revogação:** `DELETE /api/v1/pessoas/{id}/token-api`, com efeito imediato.\n  Desativar a pessoa ou trocar o perfil dela também vale na hora: o perfil é\n  lido do banco a cada requisição.\n\n**O escopo é o do perfil, não do token.** Crie uma pessoa de serviço (ex.:\n`integracao@cliente.com.br`) com um perfil de acesso que tenha só o que a\nintegração precisa. Um token emitido para alguém `admin` carrega acesso\nirrestrito.\n\n**Caso de uso típico — o cliente envia os próprios cadastros e atendimentos:**\n\n| Ação | Endpoint | Permissão no perfil |\n|---|---|---|\n| Cadastrar colaborador | `POST /api/v1/pessoas` | `pessoas:criar` |\n| Consultar colaborador | `GET /api/v1/pessoas` | `pessoas:listar` |\n| Atualizar colaborador | `PUT /api/v1/pessoas/{id}` | `pessoas:editar` |\n| Solicitar atendimento | `POST /api/v1/atendimentos` | `atendimentos:criar` |\n| Acompanhar atendimento | `GET /api/v1/atendimentos` | `atendimentos:listar` |\n| Enviar planilha em lote | `POST /api/v1/importacoes/validar` depois `POST /api/v1/importacoes/{id}/confirmar` | `importacoes:criar` |\n\nO tenant vem da pessoa dona do token; os endpoints que aceitam `tenantId` só\nadmitem tenants da árvore a que ela tem acesso.\n\n### JWT\n\nEmitido pelo IdP (RS256). Obtenha via `POST /api/v1/auth/login` ou direto no\nIdP. É o que a aplicação web usa.\n\n### Token estático de leads\n\nCredencial de **máquina**, sem pessoa e sem perfil — o próprio segredo autoriza,\ne vale só no intake de leads. Fornecido fora de banda. O mesmo header aceita\ntambém um `yvx_` de pessoa; nesse caso o perfil vale e a chamada exige\n`leads:criar`.\n\n### Limite de requisições\n\nOpcional, por token. Quando o tenant define o parâmetro `API_RATE_LIMIT`\n(inteiro = requisições por minuto), o excesso responde **429** com\n`Retry-After` e `X-RateLimit-Limit` / `X-RateLimit-Remaining` /\n`X-RateLimit-Reset`. Sem o parâmetro, não há limite.\n\nToda chamada autenticada por token (`X-API-Key` ou `X-API-Token`) é auditada.\n\n## Erros\n\nResposta padronizada em toda falha:\n\n```json\n{ \"error\": \"Forbidden\", \"message\": \"Permissão insuficiente\", \"timestamp\": \"2026-08-28T12:00:00.000Z\" }\n```\n\n**401** token ausente, inválido, expirado ou revogado · **403** autenticado, mas\no perfil não tem a permissão exigida · **400** payload inválido (o campo vem em\n`message`) · **429** cota do `API_RATE_LIMIT` excedida.\n\n## Paginação\n\nEndpoints de listagem retornam:\n\n```json\n{\n  \"content\": [...],\n  \"page\": 0,\n  \"size\": 20,\n  \"totalElements\": 100,\n  \"totalPages\": 5,\n  \"hasNextPage\": true,\n  \"hasPreviousPage\": false\n}\n```\n\nQuery params: `page` (0-based, default 0) + `size` (default 20, max 100).\n\n## IDs\n\nTodos os IDs são **TSIDs prefixados por entidade** (ex: `\"pes_0QNQBJRD9JKVW\"`, `\"org_0QNQBJRD9JKVW\"`).\n- Respostas: todo id sai no formato prefixado (campo `id` e FKs).\n- Entradas (path/query/body): aceitam SOMENTE o formato prefixado da entidade correta — outro formato retorna 400.",
     "contact": {
       "name": "Equipe SIGA",
@@ -5417,6 +5417,16 @@
           "publicLink": {
             "type": "string",
             "nullable": true
+          },
+          "origem": {
+            "type": "string",
+            "enum": [
+              "SIGA",
+              "INTEGRACAO"
+            ]
+          },
+          "enviadoEm": {
+            "type": "string"
           }
         },
         "required": [
@@ -5738,6 +5748,17 @@
               "$ref": "#/components/schemas/Attachment"
             }
           },
+          "codigosExternos": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "De-para com sistemas externos (feature-121)",
+            "example": {
+              "sgg": "1234",
+              "clinica": "AB-4471"
+            }
+          },
           "colaboradorSnapshot": {
             "$ref": "#/components/schemas/ColaboradorSnapshot"
           },
@@ -5799,6 +5820,7 @@
           "observacoesResultado",
           "dadosClinicos",
           "anexos",
+          "codigosExternos",
           "colaboradorSnapshot",
           "empresaSnapshot",
           "clinicaSnapshot",
@@ -5888,6 +5910,16 @@
           },
           "opcoesEmail": {
             "$ref": "#/components/schemas/AtendimentoOpcoesEmail"
+          },
+          "codigosExternos": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "De-para com sistemas externos (feature-121). Ex.: {\"clinica\":\"AB-4471\",\"rh\":\"9981\"}",
+            "example": {
+              "clinica": "AB-4471"
+            }
           },
           "naoGerarSemRiscos": {
             "type": "boolean",
@@ -6344,6 +6376,44 @@
           "compareceu"
         ]
       },
+      "UploadAnexoAtendimento": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string",
+            "default": "application/pdf",
+            "description": "PDF, JPEG, PNG ou TIFF",
+            "example": "application/pdf"
+          },
+          "conteudoBase64": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Arquivo em base64, máx. 100MB"
+          }
+        },
+        "required": [
+          "conteudoBase64"
+        ]
+      },
+      "CodigosExternosAtendimento": {
+        "type": "object",
+        "properties": {
+          "codigosExternos": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Códigos deste registro em sistemas externos (chave livre → código). A chave preserva maiúsculas. Conhecidos: sgg, soc, dozemed, medicar, asaas, gawa, yavix — a lista é sugestão, não restrição. No update os pares são MESCLADOS com os já gravados.",
+            "example": {
+              "sgg": "1234",
+              "sggGrupo": "53"
+            }
+          }
+        },
+        "required": [
+          "codigosExternos"
+        ]
+      },
       "AnexoUrlResponse": {
         "type": "object",
         "properties": {
@@ -6454,10 +6524,7 @@
         "properties": {
           "nome": {
             "type": "string",
-            "example": "S?rgio Luiz Walczewski Gioppo"
-          },
-          "nomeIncompleto": {
-            "type": "boolean"
+            "example": "Sérgio Luiz Walczewski Gioppo"
           },
           "crm": {
             "type": "string",
@@ -6484,7 +6551,6 @@
         },
         "required": [
           "nome",
-          "nomeIncompleto",
           "crm",
           "uf",
           "situacao",
@@ -32955,6 +33021,17 @@
           {
             "schema": {
               "type": "string",
+              "pattern": "^[^:]+:.+$",
+              "description": "Filtra pelo de-para externo (feature-121), no formato `sistema:codigo`. É como quem só conhece o próprio id encontra o atendimento aqui.",
+              "example": "clinica:AB-4471"
+            },
+            "required": false,
+            "name": "codigoExterno",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
               "enum": [
                 "PENDENTE",
                 "ENVIADA",
@@ -34161,6 +34238,269 @@
             "lang": "Dart",
             "label": "Dart",
             "source": "import 'package:http/http.dart' as http;\nimport 'dart:convert';\n\nfinal uri = Uri.parse('http://localhost:8040/api/v1/atendimentos/{id}/documento');\nfinal headers = {\n  'Content-Type': 'application/json',\n  'Authorization': 'Bearer $token',\n};\n\nfinal response = await http.get(uri, headers: headers);\nprint(jsonDecode(response.body));"
+          }
+        ]
+      }
+    },
+    "/api/v1/atendimentos/{id}/anexos/{fileName}": {
+      "put": {
+        "tags": [
+          "Atendimentos"
+        ],
+        "summary": "Anexa (ou substitui) um arquivo do atendimento",
+        "description": "Feature-121. É por aqui que a clínica devolve o exame realizado (ASO assinado, laudo). PUT e não POST porque integração REPETE: reenviar o mesmo nome de arquivo SUBSTITUI, em vez de acumular um anexo por tentativa. Aceita em qualquer status do atendimento e NÃO o conclui — concluir exige compareceu e resultado, que o arquivo não carrega.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "ate_0QNQBJRD9JKVW"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "fileName",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadAnexoAtendimento"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Anexado (ou substituído)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AtendimentoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Arquivo vazio, acima de 100MB, tipo ou nome inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão ou sem acesso ao tenant do registro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Atendimento não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "curl",
+            "label": "cURL",
+            "source": "curl -X PUT \"http://localhost:8040/api/v1/atendimentos/{id}/anexos/{fileName}\" \\\n  -H \"Authorization: Bearer $TOKEN\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{}'"
+          },
+          {
+            "lang": "curl",
+            "label": "cURL (API Token)",
+            "source": "curl -X PUT \"http://localhost:8040/api/v1/atendimentos/{id}/anexos/{fileName}\" \\\n  -H \"X-API-Key: $SIGA_API_TOKEN\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{}'"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "JavaScript",
+            "source": "const response = await fetch('http://localhost:8040/api/v1/atendimentos/{id}/anexos/{fileName}', {\n  method: 'PUT',\n  headers: {\n    'Content-Type': 'application/json',\n    Authorization: 'Bearer ' + token,\n  },\n  body: JSON.stringify({}),\n});\nconst data = await response.json();\nconsole.log(data);"
+          },
+          {
+            "lang": "Python",
+            "label": "Python",
+            "source": "import requests\n\nheaders = {\n    'Authorization': 'Bearer ' + token,\n}\n\npayload = {}\n\nresponse = requests.put('http://localhost:8040/api/v1/atendimentos/{id}/anexos/{fileName}', headers=headers, json=payload)\nprint(response.json())"
+          },
+          {
+            "lang": "Java",
+            "label": "Java",
+            "source": "import java.net.URI;\nimport java.net.http.*;\n\nvar client = HttpClient.newHttpClient();\nvar request = HttpRequest.newBuilder()\n    .uri(URI.create(\"http://localhost:8040/api/v1/atendimentos/{id}/anexos/{fileName}\"))\n    .header(\"Authorization\", \"Bearer \" + token)\n    .header(\"Content-Type\", \"application/json\")\n    .PUT(HttpRequest.BodyPublishers.ofString(\"{}\"))\n    .build();\n\nvar response = client.send(request, HttpResponse.BodyHandlers.ofString());\nSystem.out.println(response.body());"
+          },
+          {
+            "lang": "C#",
+            "label": "C#",
+            "source": "using System.Net.Http;\nusing System.Net.Http.Json;\n\nvar client = new HttpClient();\nclient.DefaultRequestHeaders.Authorization = new(\"Bearer\", token);\n\nvar payload = {};\nvar response = await client.PutAsJsonAsync(\"http://localhost:8040/api/v1/atendimentos/{id}/anexos/{fileName}\", payload);\nvar result = await response.Content.ReadAsStringAsync();\nConsole.WriteLine(result);"
+          },
+          {
+            "lang": "Dart",
+            "label": "Dart",
+            "source": "import 'package:http/http.dart' as http;\nimport 'dart:convert';\n\nfinal uri = Uri.parse('http://localhost:8040/api/v1/atendimentos/{id}/anexos/{fileName}');\nfinal headers = {\n  'Content-Type': 'application/json',\n  'Authorization': 'Bearer $token',\n};\n\nfinal response = await http.put(\n  uri,\n  headers: headers,\n  body: jsonEncode({}),\n);\nprint(jsonDecode(response.body));"
+          }
+        ]
+      }
+    },
+    "/api/v1/atendimentos/{id}/codigos-externos": {
+      "patch": {
+        "tags": [
+          "Atendimentos"
+        ],
+        "summary": "Grava/atualiza os códigos do atendimento em sistemas externos",
+        "description": "Feature-121. MERGE, nunca substituição: gravar `clinica` não apaga `sgg`. Depois de gravado, o atendimento é encontrável por GET /atendimentos?codigoExterno=clinica:AB-4471 — que é como quem só conhece o próprio id chega ao nosso.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Identificador do atendimento (ate_XXXXXXXXXXXXX)",
+              "example": "ate_0QNQBJRD9JKVW"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodigosExternosAtendimento"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Códigos atualizados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AtendimentoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Códigos externos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem acesso ao tenant do registro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Atendimento não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "curl",
+            "label": "cURL",
+            "source": "curl -X PATCH \"http://localhost:8040/api/v1/atendimentos/{id}/codigos-externos\" \\\n  -H \"Authorization: Bearer $TOKEN\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{}'"
+          },
+          {
+            "lang": "curl",
+            "label": "cURL (API Token)",
+            "source": "curl -X PATCH \"http://localhost:8040/api/v1/atendimentos/{id}/codigos-externos\" \\\n  -H \"X-API-Key: $SIGA_API_TOKEN\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{}'"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "JavaScript",
+            "source": "const response = await fetch('http://localhost:8040/api/v1/atendimentos/{id}/codigos-externos', {\n  method: 'PATCH',\n  headers: {\n    'Content-Type': 'application/json',\n    Authorization: 'Bearer ' + token,\n  },\n  body: JSON.stringify({}),\n});\nconst data = await response.json();\nconsole.log(data);"
+          },
+          {
+            "lang": "Python",
+            "label": "Python",
+            "source": "import requests\n\nheaders = {\n    'Authorization': 'Bearer ' + token,\n}\n\npayload = {}\n\nresponse = requests.patch('http://localhost:8040/api/v1/atendimentos/{id}/codigos-externos', headers=headers, json=payload)\nprint(response.json())"
+          },
+          {
+            "lang": "Java",
+            "label": "Java",
+            "source": "import java.net.URI;\nimport java.net.http.*;\n\nvar client = HttpClient.newHttpClient();\nvar request = HttpRequest.newBuilder()\n    .uri(URI.create(\"http://localhost:8040/api/v1/atendimentos/{id}/codigos-externos\"))\n    .header(\"Authorization\", \"Bearer \" + token)\n    .header(\"Content-Type\", \"application/json\")\n    .method(\"PATCH\", HttpRequest.BodyPublishers.ofString(\"{}\"))\n    .build();\n\nvar response = client.send(request, HttpResponse.BodyHandlers.ofString());\nSystem.out.println(response.body());"
+          },
+          {
+            "lang": "C#",
+            "label": "C#",
+            "source": "using System.Net.Http;\nusing System.Net.Http.Json;\n\nvar client = new HttpClient();\nclient.DefaultRequestHeaders.Authorization = new(\"Bearer\", token);\n\nvar payload = {};\nvar content = JsonContent.Create(payload);\nvar response = await client.PatchAsync(\"http://localhost:8040/api/v1/atendimentos/{id}/codigos-externos\", content);\nvar result = await response.Content.ReadAsStringAsync();\nConsole.WriteLine(result);"
+          },
+          {
+            "lang": "Dart",
+            "label": "Dart",
+            "source": "import 'package:http/http.dart' as http;\nimport 'dart:convert';\n\nfinal uri = Uri.parse('http://localhost:8040/api/v1/atendimentos/{id}/codigos-externos');\nfinal headers = {\n  'Content-Type': 'application/json',\n  'Authorization': 'Bearer $token',\n};\n\nfinal response = await http.patch(\n  uri,\n  headers: headers,\n  body: jsonEncode({}),\n);\nprint(jsonDecode(response.body));"
           }
         ]
       }

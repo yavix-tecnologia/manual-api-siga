@@ -1,0 +1,142 @@
+---
+title: Enviar o resultado do exame
+description: Como a clínica que executa o exame devolve o arquivo ao SIGA — encontrar o atendimento pelo código externo e subir o laudo.
+sidebar:
+  order: 4
+---
+
+import { Tabs, TabItem, Steps } from '@astrojs/starlight/components';
+
+Fluxo da **clínica**, não do RH: quando o exame é executado, o arquivo (ASO
+assinado, laudo, resultado) volta para o SIGA por dois passos.
+
+<Steps>
+
+1. **Achar o atendimento pelo seu próprio código** — `GET /atendimentos?codigoExterno=…`
+
+2. **Subir o arquivo** — `PUT /atendimentos/{id}/anexos/{fileName}`
+
+</Steps>
+
+## Antes: registre o seu código no atendimento
+
+Você conhece o atendimento pelo id do **seu** sistema, não pelo nosso. Grave essa
+correspondência uma vez e depois busque por ela:
+
+```bash
+curl -s -X PATCH -H "X-API-Key: $SIGA_API_KEY" \
+  -H "Content-Type: application/json" \
+  "$SIGA_API_BASE/api/v1/atendimentos/atd_0QNQBJRD9JKVW/codigos-externos" \
+  -d '{ "codigosExternos": { "clinica": "AB-4471" } }'
+```
+
+O `PATCH` faz **merge**: gravar `clinica` não apaga o `sgg` que já estava lá.
+Cada sistema cuida da própria chave.
+
+## Passo 1 — Achar o atendimento
+
+```bash
+curl -s -H "X-API-Key: $SIGA_API_KEY" \
+  "$SIGA_API_BASE/api/v1/atendimentos?codigoExterno=clinica:AB-4471"
+```
+
+```json
+{
+  "content": [
+    {
+      "id": "atd_0QNQBJRD9JKVW",
+      "statusAtendimento": "AGENDADO",
+      "pessoaNomeCompleto": "Maria de Souza",
+      "dataAgendamento": "2026-09-08",
+      "codigosExternos": { "clinica": "AB-4471" }
+    }
+  ],
+  "totalElements": 1
+}
+```
+
+O formato é `sistema:codigo`. Só o **primeiro** `:` separa — se o seu código tem
+dois-pontos no meio (`lab:LAB:2026:001`), ele chega inteiro.
+
+## Passo 2 — Subir o arquivo
+
+<Tabs syncKey="linguagem">
+<TabItem label="curl">
+
+```bash
+BASE64=$(base64 -i laudo.pdf | tr -d '\n')
+
+curl -s -X PUT -H "X-API-Key: $SIGA_API_KEY" \
+  -H "Content-Type: application/json" \
+  "$SIGA_API_BASE/api/v1/atendimentos/atd_0QNQBJRD9JKVW/anexos/laudo.pdf" \
+  -d "{\"contentType\":\"application/pdf\",\"conteudoBase64\":\"$BASE64\"}"
+```
+
+</TabItem>
+<TabItem label="JavaScript">
+
+```js
+import { readFile } from 'node:fs/promises';
+
+const arquivo = await readFile('laudo.pdf');
+
+await siga(`/atendimentos/${atendimentoId}/anexos/laudo.pdf`, {
+  method: 'PUT',
+  body: {
+    contentType: 'application/pdf',
+    conteudoBase64: arquivo.toString('base64'),
+  },
+});
+```
+
+</TabItem>
+<TabItem label="Python">
+
+```python
+import base64
+
+with open("laudo.pdf", "rb") as f:
+    conteudo = base64.b64encode(f.read()).decode()
+
+siga(
+    f"/atendimentos/{atendimento_id}/anexos/laudo.pdf",
+    method="PUT",
+    body={"contentType": "application/pdf", "conteudoBase64": conteudo},
+)
+```
+
+</TabItem>
+</Tabs>
+
+:::tip[É PUT, e isso é de propósito]
+O nome do arquivo faz parte da URL e funciona como chave: **reenviar o mesmo nome
+substitui**. Se a sua chamada deu timeout e você não sabe se chegou, mande de
+novo — não vai virar um segundo "laudo.pdf" no atendimento.
+:::
+
+## O que a API aceita
+
+| | |
+|---|---|
+| Tipos | PDF, JPEG, PNG e TIFF |
+| Tamanho | até 100 MB, medido depois de decodificar o base64 |
+| Nome | até 200 caracteres, sem `/` e sem `..` |
+| Status do atendimento | **qualquer um**, inclusive `PENDENTE` |
+
+:::caution[Anexar não conclui o atendimento]
+O upload guarda o arquivo e só. Concluir exige `compareceu` e o resultado
+(APTO/INAPTO), que o arquivo não carrega de forma legível por máquina — e um
+upload que concluísse sozinho teria de inventar esse resultado.
+
+Para fechar o ciclo, chame também `PATCH /atendimentos/{id}/concluir`.
+:::
+
+## Permissão
+
+Este fluxo pede **`atendimentos:anexar`** no perfil da chave — permissão própria,
+separada de `atendimentos:editar`. É de propósito: `editar` daria junto o poder de
+reagendar, alterar exames e concluir atendimentos, e subir um laudo não precisa
+disso.
+
+Peça ao administrador da conta um perfil com `atendimentos:listar` e
+`atendimentos:anexar`.

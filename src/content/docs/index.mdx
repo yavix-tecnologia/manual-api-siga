@@ -69,6 +69,10 @@ leitura que vêm antes), com a resposta de cada uma.
   <Card title="Limite transparente" icon="rocket">
     `X-RateLimit-*` em toda resposta e `Retry-After` no 429 — sem adivinhação.
   </Card>
+  <Card title="A clínica devolve o laudo" icon="document">
+    `PUT` idempotente pelo nome do arquivo: reenviar substitui, não duplica.
+    [Ver o fluxo](/enviar-resultado/)
+  </Card>
 </CardGrid>
 
 ## Como conseguir a chave
@@ -92,7 +96,9 @@ Dito na cara, para você não descobrir depois de escrever código:
   status — o acompanhamento é por consulta (`GET /atendimentos`).
 - **Importação em massa por planilha.** Existe (`/importacoes`), é outro caminho,
   com regras próprias.
-- **Resultado clínico e ASO assinado.** É passo do médico dentro do SIGA.
+- **Resultado clínico e ASO assinado.** Registrar o resultado (APTO/INAPTO) é passo
+  do médico dentro do SIGA. **Enviar o arquivo do exame, não** — isso a clínica faz
+  pela API, em [Enviar o resultado](/enviar-resultado/).
 - **Cadastro de setores e cargos.** Tecnicamente possível, operacionalmente
   **não** — o [tutorial](/tutorial/#passo-3--ler-setor-e-cargo-e-por-que-não-criar)
   explica por quê, e é a parte mais importante deste manual.
