@@ -1,16 +1,11 @@
 ---
 title: Erros
-layout: default
-nav_order: 4
+description: Os códigos HTTP da API do SIGA e as recusas de negócio, cada uma com onde se corrige.
+sidebar:
+  order: 3
 ---
 
-# Erros e como resolver cada um
-{: .no_toc }
-
-1. TOC
-{:toc}
-
----
+import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 ## Formato
 
@@ -39,11 +34,10 @@ O `message` é escrito para ser lido por quem vai corrigir. Quando há uma lista
 | `422` | Requisição bem formada, **cadastro** incompleto | Corrigir o cadastro, não o payload |
 | `429` | Cota por minuto excedida | Respeitar o `Retry-After` |
 
-<div class="aviso" markdown="1">
-**400 e 422 são coisas diferentes.** 400 é "seu JSON está errado". 422 é "seu
-JSON está certo, mas o dado que ele aponta está incompleto no SIGA" — quem
-corrige é o cadastro, não o código.
-</div>
+:::note[400 e 422 são coisas diferentes]
+**400** é "seu JSON está errado". **422** é "seu JSON está certo, mas o dado que
+ele aponta está incompleto no SIGA" — quem corrige é o cadastro, não o código.
+:::
 
 ## Recusas de negócio
 
@@ -79,8 +73,9 @@ X-RateLimit-Remaining: 0
 X-RateLimit-Reset: 1788230400
 ```
 
-<div class="abas" markdown="1">
-<div class="abas-painel" data-lang="JavaScript" markdown="1">
+<Tabs syncKey="linguagem">
+<TabItem label="JavaScript">
+
 ```js
 async function comRetry(fn, tentativas = 3) {
   for (let i = 0; i < tentativas; i++) {
@@ -89,8 +84,7 @@ async function comRetry(fn, tentativas = 3) {
     } catch (e) {
       // Espera o que o servidor mandou esperar — não um intervalo chutado.
       if (e.status === 429 && i < tentativas - 1) {
-        const espera = Number(e.retryAfter ?? 5) * 1000;
-        await new Promise((r) => setTimeout(r, espera));
+        await new Promise((r) => setTimeout(r, Number(e.retryAfter ?? 5) * 1000));
         continue;
       }
       throw e;
@@ -98,8 +92,30 @@ async function comRetry(fn, tentativas = 3) {
   }
 }
 ```
-</div>
-<div class="abas-painel" data-lang="Python" markdown="1">
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```ts
+async function comRetry<T>(fn: () => Promise<T>, tentativas = 3): Promise<T> {
+  for (let i = 0; i < tentativas; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (e instanceof SigaError && e.status === 429 && i < tentativas - 1) {
+        await new Promise((r) => setTimeout(r, Number(e.retryAfter ?? 5) * 1000));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw new Error('inalcançável');
+}
+```
+
+</TabItem>
+<TabItem label="Python">
+
 ```python
 def com_retry(fn, tentativas=3):
     for i in range(tentativas):
@@ -112,13 +128,14 @@ def com_retry(fn, tentativas=3):
                 continue
             raise
 ```
-</div>
-</div>
 
-<div class="aviso" markdown="1">
-**Não faça retry de 4xx que não seja 429.** 400, 403 e 422 não melhoram com
-tentativa: eles pedem correção. Repetir só gasta a sua cota.
-</div>
+</TabItem>
+</Tabs>
+
+:::caution[Não repita 4xx que não seja 429]
+400, 403 e 422 não melhoram com tentativa — eles pedem correção. Repetir só gasta
+a sua cota.
+:::
 
 ## Idempotência
 

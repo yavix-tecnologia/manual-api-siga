@@ -13,7 +13,7 @@
 set -euo pipefail
 
 BASE="${SIGA_API_BASE:-https://api-sst.yavix.app}"
-DESTINO="api/openapi.json"
+DESTINO="public/openapi.json"
 
 echo "Baixando de ${BASE}/openapi.json…"
 curl -fsSL "${BASE}/openapi.json" -o "${DESTINO}.tmp"
@@ -25,6 +25,11 @@ if ! python3 -c "import json,sys; json.load(open('${DESTINO}.tmp'))" 2>/dev/null
   echo "Resposta não é JSON válido — spec anterior mantido." >&2
   exit 1
 fi
+
+# A lista de servidores do spec traz localhost e dev, que nao fazem sentido num
+# manual publico -- e o Scalar usa o PRIMEIRO como padrao, entao quem copiasse um
+# exemplo sairia chamando http://localhost:8040. Fica so producao.
+python3 scripts/so-producao.py "${DESTINO}.tmp"
 
 mv "${DESTINO}.tmp" "${DESTINO}"
 

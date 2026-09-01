@@ -1,0 +1,23 @@
+# Build do manual no Netlify.
+#
+# `astro build` gera estático em dist/ — nada de servidor, nada de função. O
+# publish é a pasta inteira, e a busca (Pagefind) é indexada no próprio build.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# O spec da API é grande e muda pouco: cache longo com revalidação.
+[[headers]]
+  for = "/openapi.json"
+  [headers.values]
+    Cache-Control = "public, max-age=300, stale-while-revalidate=86400"
+    Access-Control-Allow-Origin = "*"
+
+# Endereços da versão anterior (GitHub Pages de projeto) continuam funcionando.
+[[redirects]]
+  from = "/manual-api-siga/*"
+  to = "/:splat"
+  status = 301

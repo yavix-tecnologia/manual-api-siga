@@ -1,22 +1,27 @@
 # Manual de Integração — SIGA
 
 Documentação pública de integração com a API do SIGA, publicada em
-**<https://yavix-tecnologia.github.io/manual-api-siga/>**.
+**<https://manual-siga-api.netlify.app>**.
 
 Conteúdo: um tutorial de 10 minutos cobrindo o onboarding de colaborador
 (cadastro → solicitação de exame → agendamento → guia), a tabela de erros com
 onde se resolve cada um, e a referência completa dos 212 endpoints.
 
+Feito com [Astro Starlight](https://starlight.astro.build) e publicado no
+Netlify. (A primeira versão era Jekyll/GitHub Pages; o Pages da organização é
+restrito, e o Netlify não limita o build.)
+
 ## Estrutura
 
 ```
-index.md            Início — o que é, como conseguir a chave, o que NÃO cobre
-tutorial.md         Os 7 passos do onboarding, com respostas reais
-autenticacao.md     X-API-Key, permissões mínimas, rate limit, revogação
-erros.md            HTTP + recusas de negócio, cada uma com onde se corrige
-referencia.md       Renderiza api/openapi.json com Scalar
-api/openapi.json    Spec da API — GERADO, ver scripts/atualizar-spec.sh
-exemplos/           onboarding.js · onboarding.ts · onboarding.py (executáveis)
+src/content/docs/index.mdx        Início — o que é, como pegar a chave, o que NÃO cobre
+src/content/docs/tutorial.mdx     Os 7 passos do onboarding, com abas por linguagem
+src/content/docs/autenticacao.md  X-API-Key, permissões mínimas, rate limit, revogação
+src/content/docs/erros.mdx        HTTP + recusas de negócio, cada uma com onde se corrige
+src/pages/api.astro               Referência completa (Scalar em tela cheia)
+public/openapi.json               Spec da API — GERADO, ver scripts/atualizar-spec.sh
+exemplos/                         onboarding.js · onboarding.ts · onboarding.py
+netlify.toml                      build, headers e redirects
 ```
 
 ## Atualizar a referência da API
@@ -24,18 +29,21 @@ exemplos/           onboarding.js · onboarding.ts · onboarding.py (executávei
 A referência não é escrita à mão. Depois de uma release da API:
 
 ```bash
-./scripts/atualizar-spec.sh          # produção
-git diff --stat api/openapi.json     # confira o que mudou
+npm run spec                            # produção
+git diff --stat public/openapi.json     # confira o que mudou
 git commit -am "docs: spec da API vX.Y.Z"
 ```
 
+O script deixa **só o servidor de produção** na lista `servers`: o Scalar usa o
+primeiro como padrão, e um manual público apontando para `localhost` faria o
+leitor copiar um exemplo que não funciona.
+
 ## Rodar o site local
 
-O GitHub Pages faz o build sozinho — isto é só para pré-visualizar:
-
 ```bash
-bundle install
-bundle exec jekyll serve   # http://127.0.0.1:4000/manual-api-siga/
+npm install
+npm run dev      # http://localhost:4321
+npm run build    # gera dist/, igual ao que o Netlify publica
 ```
 
 ## Rodar os exemplos
@@ -46,7 +54,7 @@ export SIGA_API_BASE="https://api-sst.yavix.app"
 
 node exemplos/onboarding.js
 python exemplos/onboarding.py
-npm install && npm run onboarding:ts
+npx tsx exemplos/onboarding.ts
 ```
 
 ## Regras deste repositório

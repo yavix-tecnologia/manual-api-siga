@@ -1,20 +1,14 @@
 ---
 title: Tutorial de 10 minutos
-layout: default
-nav_order: 3
+description: Do primeiro curl até a guia do exame em PDF — as sete chamadas do onboarding, na ordem em que o servidor as exige.
+sidebar:
+  order: 2
 ---
 
-# Onboarding completo em 10 minutos
-{: .no_toc }
+import { Tabs, TabItem, Steps, Aside } from '@astrojs/starlight/components';
 
 Do primeiro `curl` até a guia do exame em PDF. Sete chamadas, na ordem em que o
 servidor as exige.
-{: .fs-5 .fw-300 }
-
-1. TOC
-{:toc}
-
----
 
 ## Antes de começar
 
@@ -91,15 +85,14 @@ curl -s -H "X-API-Key: $SIGA_API_KEY" \
 
 Guarde o `id` — ele aparece em quase todos os passos seguintes.
 
-<div class="aviso aviso-ok" markdown="1">
-**Dica de integração:** guarde o `org_…` no seu lado, associado ao CNPJ. Buscar
-por nome a cada execução é frágil (nome muda); o id não muda.
-</div>
+:::tip[Guarde o id, não o nome]
+Associe o `org_…` ao CNPJ do seu lado. Buscar por nome a cada execução é frágil —
+nome muda; id não.
+:::
 
 ---
 
 ## Passo 3 — Ler setor e cargo (e por que **não** criar)
-{: #passo-3 }
 
 O cadastro do colaborador precisa de um setor e de um cargo **que já existam**:
 
@@ -120,22 +113,19 @@ curl -s -H "X-API-Key: $SIGA_API_KEY" \
 ]
 ```
 
-<div class="aviso aviso-erro" markdown="1">
-**Não crie setores e cargos pela integração.**
-
-Não é burocracia: no SIGA, setor e cargo são o **endereço da matriz de riscos** e
-da **recomendação de exames**. É a partir deles que o sistema sabe quais exames o
+:::danger[Não crie setores e cargos pela integração]
+Não é burocracia. No SIGA, setor e cargo são o **endereço da matriz de riscos** e
+da **recomendação de exames** — é a partir deles que o sistema sabe quais exames o
 PCMSO exige para aquela função.
 
 Um cargo criado pela API existe, aceita vínculo e deixa o atendimento ser aberto
 — só que **sem grade de exames**, porque ninguém parametrizou risco nenhum para
-ele. O resultado é um colaborador indo à clínica sem os exames que deveria fazer,
-e o erro só aparece no ASO, depois da consulta.
+ele. O colaborador vai à clínica sem os exames que deveria fazer, e o erro só
+aparece no ASO, depois da consulta.
 
 **Cargo ou setor novo é pedido ao time de SST**, que cadastra e parametriza a
-matriz de riscos. Depois disso ele aparece nesta listagem e a integração segue
-sozinha.
-</div>
+matriz. Depois disso ele aparece nesta listagem e a integração segue sozinha.
+:::
 
 Se o cargo que você precisa não está na lista, **pare aqui** e trate como
 pendência de cadastro — não contorne criando.
@@ -147,8 +137,9 @@ pendência de cadastro — não contorne criando.
 Seis campos são obrigatórios para que este colaborador possa ter exame:
 **nome, CPF, data de nascimento, sexo, setor e cargo**. O RG é opcional.
 
-<div class="abas" markdown="1">
-<div class="abas-painel" data-lang="curl" markdown="1">
+<Tabs syncKey="linguagem">
+<TabItem label="curl">
+
 ```bash
 curl -s -X POST -H "X-API-Key: $SIGA_API_KEY" \
   -H "Content-Type: application/json" \
@@ -168,8 +159,10 @@ curl -s -X POST -H "X-API-Key: $SIGA_API_KEY" \
     }
   }'
 ```
-</div>
-<div class="abas-painel" data-lang="JavaScript" markdown="1">
+
+</TabItem>
+<TabItem label="JavaScript">
+
 ```js
 const pessoa = await siga('/pessoas', {
   method: 'POST',
@@ -185,8 +178,28 @@ const pessoa = await siga('/pessoas', {
   },
 });
 ```
-</div>
-<div class="abas-painel" data-lang="Python" markdown="1">
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```ts
+const pessoa = await siga<Pessoa>('/pessoas', {
+  method: 'POST',
+  body: {
+    nomeCompleto: 'Maria de Souza',
+    cpf: '52998224725',
+    dataNascimento: '1990-01-31',
+    sexo: 'F',
+    organizacaoId: org.id,
+    codigoIntegracao: `RH-${Date.now()}`,
+    vinculo: { setorId: setor.id, cargoId: cargo.id },
+  },
+});
+```
+
+</TabItem>
+<TabItem label="Python">
+
 ```python
 pessoa = siga("/pessoas", method="POST", body={
     "nomeCompleto": "Maria de Souza",
@@ -199,8 +212,9 @@ pessoa = siga("/pessoas", method="POST", body={
     "vinculo": {"setorId": SETOR_ID, "cargoId": CARGO_ID, "dataAdmissao": "2026-09-01"},
 })
 ```
-</div>
-</div>
+
+</TabItem>
+</Tabs>
 
 ```json
 {
@@ -216,11 +230,11 @@ pessoa = siga("/pessoas", method="POST", body={
 **`codigoIntegracao` é seu amigo:** guarde ali a matrícula do seu sistema. É por
 ele que você reencontra a pessoa depois sem depender do CPF.
 
-<div class="aviso" markdown="1">
-**CPF duplicado?** O CPF é único por empresa. Se o colaborador já existe, o
-cadastro é recusado — antes de criar, procure:
+:::note[CPF duplicado]
+O CPF é único por empresa. Se o colaborador já existe, o cadastro é recusado —
+antes de criar, procure:
 `GET /pessoas?organizacaoId=org_…&search=52998224725`.
-</div>
+:::
 
 ---
 
@@ -334,7 +348,7 @@ curl -s -X PATCH -H "X-API-Key: $SIGA_API_KEY" \
 
 Mandando `agendaId`, **a clínica sai da agenda** — você não precisa acertar o id
 dela — e o servidor confere as regras de liberação. As recusas possíveis estão em
-[Erros]({{ '/erros' | relative_url }}), cada uma com onde se resolve.
+[Erros](/erros/), cada uma com onde se resolve.
 
 A guia (Guia + Ficha Clínica + ASO) sai em HTML pronto para impressão:
 
@@ -364,5 +378,5 @@ node exemplos/onboarding.js        # ou: python exemplos/onboarding.py
 
 ## Próximos passos
 
-- [Erros e como resolver cada um]({{ '/erros' | relative_url }})
-- [Referência completa da API]({{ '/referencia' | relative_url }})
+- [Erros e como resolver cada um](/erros/)
+- [Referência completa da API](/api/)

@@ -1,0 +1,27 @@
+---
+import Default from '@astrojs/starlight/components/Footer.astro';
+---
+
+<Default><slot /></Default>
+
+<div class="rodape-suporte">
+  <p>
+    Dúvida de integração, ambiente de testes ou chave de sandbox:
+    <a href="mailto:suporte@yavix.com.br">suporte@yavix.com.br</a>
+  </p>
+  <p class="rodape-fino">Yavix Tecnologia — SIGA</p>
+</div>
+
+<style>
+  .rodape-suporte {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--sl-color-hairline);
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-3);
+  }
+  .rodape-fino {
+    margin-top: 0.25rem;
+    font-size: var(--sl-text-xs);
+  }
+</style>

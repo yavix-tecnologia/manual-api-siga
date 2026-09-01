@@ -1,0 +1,28 @@
+/*
+ * Paleta do SIGA sobre o Starlight — só o tom de destaque.
+ *
+ * NÃO sobrescrever `--sl-color-white`: o tema a usa como cor de TEXTO de título
+ * no modo claro, e defini-la como branco deixa o h1 invisível sobre o fundo
+ * branco. Foi o que aconteceu na primeira tentativa.
+ */
+:root {
+  --sl-color-accent-low: #052c3d;
+  --sl-color-accent: #1a8fd0;
+  --sl-color-accent-high: #a8d8f0;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #cfe8f6;
+  --sl-color-accent: #0c72b0;
+  --sl-color-accent-high: #063f61;
+}
+
+/* Tabelas de erro e de permissão: código não pode quebrar linha no meio. */
+td code {
+  white-space: nowrap;
+}
+
+/* Blocos de fluxo em ASCII precisam rolar em vez de quebrar. */
+pre.astro-code {
+  overflow-x: auto;
+}

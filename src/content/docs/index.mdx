@@ -1,0 +1,95 @@
+---
+title: Integração com o SIGA
+description: Onboarding de colaborador e agendamento de exame ocupacional pela API do SIGA — sete chamadas, do primeiro curl à guia em PDF.
+template: splash
+hero:
+  tagline: |
+    Cadastro de colaboradores, solicitação e agendamento de exames ocupacionais,
+    e a guia do exame em PDF. Sete chamadas, uma chave, nenhuma tela.
+  actions:
+    - text: Tutorial de 10 minutos
+      link: /tutorial/
+      icon: right-arrow
+      variant: primary
+    - text: Todos os endpoints
+      link: /api/
+      icon: external
+      variant: minimal
+      attrs:
+        target: _blank
+---
+
+import { Card, CardGrid, Steps } from '@astrojs/starlight/components';
+
+## O caso de uso
+
+Um colaborador é admitido no seu sistema de RH e, sem ninguém digitar nada duas
+vezes, ele nasce cadastrado no SIGA com o exame admissional agendado e a guia
+pronta para impressão.
+
+<Steps>
+
+1. **Cadastrar o colaborador** — `POST /pessoas`
+
+2. **Ver onde ele pode ser atendido** — `GET /agendas/disponiveis`
+
+3. **Solicitar o exame** — `POST /atendimentos`
+
+4. **Marcar data e hora** — `PATCH /atendimentos/{id}/agendar`
+
+5. **Baixar a guia** — `GET /atendimentos/{id}/documento`
+
+</Steps>
+
+O [tutorial](/tutorial/) mostra as sete chamadas (essas cinco mais as duas de
+leitura que vêm antes), com a resposta de cada uma.
+
+## Como é a API
+
+<CardGrid>
+  <Card title="REST sobre JSON" icon="seti:json">
+    Base `https://api-sst.yavix.app/api/v1`. Sem SOAP, sem XML, sem SDK
+    obrigatório.
+  </Card>
+  <Card title="Um header" icon="approve-check">
+    `X-API-Key: yvx_…`. Sem troca de token, sem refresh, sem OAuth.
+  </Card>
+  <Card title="OpenAPI 3.1 do código" icon="open-book">
+    212 rotas documentadas, geradas do próprio servidor — não há versão
+    desatualizada para você ler por engano.
+  </Card>
+  <Card title="Erros que dizem o que fazer" icon="warning">
+    Corpo padronizado, e cada recusa de negócio tem código próprio com
+    [onde se corrige](/erros/).
+  </Card>
+  <Card title="IDs legíveis" icon="information">
+    TSID prefixado por entidade: `pes_0QNQBJRD9JKVW`. Dá para ler um log e saber
+    do que se trata.
+  </Card>
+  <Card title="Limite transparente" icon="rocket">
+    `X-RateLimit-*` em toda resposta e `Retry-After` no 429 — sem adivinhação.
+  </Card>
+</CardGrid>
+
+## Como conseguir a chave
+
+A chave é emitida pelo **administrador da sua conta** no SIGA, para uma pessoa —
+e carrega **as permissões do perfil dessa pessoa**. Por isso a recomendação é
+criar uma *pessoa de serviço* (`integracao@suaempresa.com.br`) com um perfil que
+tenha só o que a integração precisa.
+
+O passo a passo, as permissões mínimas e o ciclo de vida estão em
+[Autenticação](/autenticacao/).
+
+## O que este manual **não** cobre
+
+Dito na cara, para você não descobrir depois de escrever código:
+
+- **Webhooks / callbacks.** A API não notifica seu sistema quando o exame muda de
+  status — o acompanhamento é por consulta (`GET /atendimentos`).
+- **Importação em massa por planilha.** Existe (`/importacoes`), é outro caminho,
+  com regras próprias.
+- **Resultado clínico e ASO assinado.** É passo do médico dentro do SIGA.
+- **Cadastro de setores e cargos.** Tecnicamente possível, operacionalmente
+  **não** — o [tutorial](/tutorial/#passo-3--ler-setor-e-cargo-e-por-que-não-criar)
+  explica por quê, e é a parte mais importante deste manual.

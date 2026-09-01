@@ -1,16 +1,22 @@
 {
-  "name": "manual-api-siga-exemplos",
-  "private": true,
+  "name": "manual-api-siga",
   "type": "module",
-  "description": "Exemplos executáveis do manual de integração com a API do SIGA",
+  "private": true,
+  "description": "Manual público de integração com a API do SIGA",
   "scripts": {
-    "onboarding:js": "node exemplos/onboarding.js",
-    "onboarding:ts": "tsx exemplos/onboarding.ts",
-    "typecheck": "tsc --noEmit"
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "spec": "./scripts/atualizar-spec.sh",
+    "typecheck": "tsc --noEmit -p tsconfig.exemplos.json"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.36.3",
+    "astro": "^5.1.5",
+    "sharp": "^0.33.5"
   },
   "devDependencies": {
-    "@types/node": "^22.10.2",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.3"
   }
 }

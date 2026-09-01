@@ -1,0 +1,71 @@
+---
+/**
+ * Referência completa da API, em tela cheia e FORA do layout de documentação.
+ *
+ * O Scalar quer a largura toda (três colunas: navegação, descrição e exemplo) —
+ * espremido na coluna central do Starlight ele fica ilegível. Por isso é uma
+ * página Astro própria, e o link no menu abre em nova aba.
+ *
+ * O spec vem de `/openapi.json`, servido como estático deste mesmo site: a
+ * página abre mesmo com a API fora do ar, e a versão publicada é auditável.
+ * `scripts/atualizar-spec.sh` atualiza o arquivo.
+ */
+import spec from '../../public/openapi.json';
+
+const versao = (spec as { info: { version: string } }).info.version;
+const rotas = Object.keys((spec as { paths: Record<string, unknown> }).paths).length;
+---
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Referência da API — SIGA</title>
+    <meta
+      name="description"
+      content={`Referência completa da API do SIGA — ${rotas} endpoints, OpenAPI 3.1.`}
+    />
+    <style>
+      body {
+        margin: 0;
+      }
+      .barra {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.6rem 1rem;
+        background: #0f2b3d;
+        color: #fff;
+        font:
+          600 0.85rem/1.2 system-ui,
+          sans-serif;
+      }
+      .barra a {
+        color: #9fd4ef;
+        text-decoration: none;
+      }
+      .barra a:hover {
+        text-decoration: underline;
+      }
+      .barra-versao {
+        font-weight: 400;
+        opacity: 0.75;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="barra">
+      <a href="/">← Manual de Integração</a>
+      <span class="barra-versao">SIGA API v{versao} · {rotas} rotas</span>
+    </div>
+
+    <script
+      id="api-reference"
+      data-url="/openapi.json"
+      data-configuration='{"theme":"default","hideDownloadButton":false,"searchHotKey":"k"}'></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.25.86/dist/browser/standalone.min.js"
+    ></script>
+  </body>
+</html>

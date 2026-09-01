@@ -1,13 +1,5 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "lib": ["ES2022", "DOM"],
-    "types": ["node"],
-    "strict": true,
-    "noEmit": true,
-    "skipLibCheck": true
-  },
-  "include": ["exemplos/**/*.ts"]
+  "extends": "astro/tsconfigs/strict",
+  "include": [".astro/types.d.ts", "**/*"],
+  "exclude": ["dist", "exemplos"]
 }

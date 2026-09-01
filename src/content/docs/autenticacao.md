@@ -1,15 +1,8 @@
 ---
 title: Autenticação
-layout: default
-nav_order: 2
----
-
-# Autenticação
-{: .no_toc }
-
-1. TOC
-{:toc}
-
+description: Como a X-API-Key funciona, quais permissões o perfil precisa ter, e o que acontece quando a cota estoura.
+sidebar:
+  order: 1
 ---
 
 ## Um header, e só
@@ -30,11 +23,10 @@ endpoint** da API — não existe rota reservada ao login por usuário e senha.
 
 Este é o ponto que mais gera surpresa, então vai antes de tudo:
 
-<div class="aviso" markdown="1">
-**A `X-API-Key` não tem escopo próprio.** Ela executa com **exatamente as
-permissões do perfil de acesso da pessoa** dona da chave. Uma chave emitida para
-alguém `admin` faz tudo o que um admin faz.
-</div>
+:::caution[A chave não tem escopo próprio]
+Ela executa com **exatamente as permissões do perfil de acesso da pessoa** dona
+da chave. Uma chave emitida para alguém `admin` faz tudo o que um admin faz.
+:::
 
 Por isso a recomendação é **uma pessoa de serviço**: crie no SIGA um cadastro do
 tipo `integracao@suaempresa.com.br`, com um perfil de acesso que tenha só as
@@ -73,10 +65,10 @@ do banco a cada requisição, não fica preso no token.
 
 ## Onde guardar
 
-<div class="aviso aviso-erro" markdown="1">
-**Nunca** no código, no front-end, num repositório ou num arquivo de exemplo. A
-chave carrega as permissões de uma pessoa real da sua conta.
-</div>
+:::danger[Nunca versione a chave]
+Nem no código, nem no front-end, nem num arquivo de exemplo. A chave carrega as
+permissões de uma pessoa real da sua conta.
+:::
 
 Todos os exemplos deste manual leem a chave de variável de ambiente:
 
