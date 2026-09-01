@@ -2,6 +2,7 @@
   "name": "manual-api-siga",
   "type": "module",
   "private": true,
+  "version": "1.0.0",
   "description": "Manual público de integração com a API do SIGA",
   "scripts": {
     "dev": "astro dev",
