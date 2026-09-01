@@ -1,0 +1,16 @@
+{
+  "name": "manual-api-siga-exemplos",
+  "private": true,
+  "type": "module",
+  "description": "Exemplos executáveis do manual de integração com a API do SIGA",
+  "scripts": {
+    "onboarding:js": "node exemplos/onboarding.js",
+    "onboarding:ts": "tsx exemplos/onboarding.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
