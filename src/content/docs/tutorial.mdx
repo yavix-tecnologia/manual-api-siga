@@ -24,7 +24,7 @@ O fluxo inteiro:
 2. achar a empresa     GET  /organizacoes
 3. ler setor e cargo   GET  /setores  ·  GET /setores/{id}/cargos
 4. cadastrar pessoa    POST /pessoas
-5. ver agendas         GET  /agendas/disponiveis
+5. ver agendas         GET  /agendas/para-colaborador
 6. abrir atendimento   POST /atendimentos
 7. agendar + guia      PATCH /atendimentos/{id}/agendar  ·  GET /atendimentos/{id}/documento
 ```
@@ -240,36 +240,107 @@ antes de criar, procure:
 
 ## Passo 5 — Ver onde o exame pode ser marcado
 
-Não escolha clínica por texto. Pergunte quais **agendas** estão liberadas para a
-empresa — a clínica vem junto, já validada:
+Não escolha clínica por texto, e não escolha clínica sem conferir **cobertura**:
+a clínica precisa atender **todos** os exames recomendados para aquele
+colaborador. Uma que atende só parte obriga um segundo deslocamento, e a origem
+recusa a solicitação inteira.
+
+Uma chamada responde as duas coisas — onde pode marcar e se cobre tudo:
 
 ```bash
 curl -s -H "X-API-Key: $SIGA_API_KEY" \
-  "$SIGA_API_BASE/api/v1/agendas/disponiveis?organizacaoId=org_0QNQBJRD9JKVW&tipoExameId=tpe_0QNQBJRD9JKVW"
+  "$SIGA_API_BASE/api/v1/agendas/para-colaborador?pessoaId=pes_0QNQBJRD9JKVW"
 ```
 
 ```json
-[
-  {
-    "id": "agd_0QNQBJRD9JKVW",
-    "nome": "Unidade Centro — manhã",
-    "clinicaId": "cln_0QNQBJRD9JKVW",
-    "clinicaNome": "Clínica Exemplo — Unidade Centro",
-    "duracaoPadraoMinutos": 30,
-    "horarios": { "seg": [{ "inicio": "08:00", "fim": "12:00" }] },
-    "tiposExameIds": [],
-    "ativo": true
-  }
-]
+{
+  "pessoaId": "pes_0QNQBJRD9JKVW",
+  "cargoNome": "ADVOGADO",
+  "exameClinico": true,
+  "procedimentos": [
+    { "id": "pro_0QNQBJRD9JKVW", "nome": "Avaliação Ergonômica" },
+    { "id": "pro_0QNQBJRD9JKVX", "nome": "Toxicológico" }
+  ],
+  "nenhumaCompleta": false,
+  "agendas": [
+    {
+      "id": "agd_0QNQBJRD9JKVW",
+      "nome": "Unidade Centro — manhã",
+      "clinicaNome": "Clínica Exemplo — Unidade Centro",
+      "cobertura": {
+        "completa": true,
+        "totalPedidos": 2,
+        "atendidos": [
+          { "id": "pro_0QNQBJRD9JKVW", "nome": "Avaliação Ergonômica" },
+          { "id": "pro_0QNQBJRD9JKVX", "nome": "Toxicológico" }
+        ],
+        "faltantes": []
+      }
+    }
+  ]
+}
 ```
 
-Duas leituras importantes:
+As agendas vêm ordenadas: **cobertura completa primeiro**, e entre as
+incompletas, a que menos deixa faltando. Na prática, `agendas[0]` é a escolha
+certa sempre que `nenhumaCompleta` for `false`.
 
-- **`tiposExameIds` vazio = a agenda aceita todos os tipos de exame.** Lista vazia
-  não é "nenhum".
-- Esta rota já aplica os dois recortes que o agendamento vai conferir depois: a
-  agenda estar liberada para a empresa **e** a clínica atender aquela empresa.
+### Quando nenhuma agenda cobre tudo
+
+```json
+{
+  "nenhumaCompleta": true,
+  "agendas": [
+    {
+      "clinicaNome": "CEMO — Centro de Medicina Ocupacional",
+      "cobertura": {
+        "completa": false,
+        "faltantes": [{ "id": "pro_0QNQBJRD9JKVW", "nome": "Avaliação Ergonômica" }]
+      }
+    }
+  ]
+}
+```
+
+`nenhumaCompleta: true` **não é erro** — é o aviso de que não existe onde marcar
+tudo de uma vez. Quase sempre significa que o procedimento não está vinculado a
+clínica nenhuma, e não que o colaborador precise de duas viagens. **Não mande a
+solicitação:** fale com o time do SIGA para vincular o exame à clínica. Enviar
+assim faz a origem recusar o atendimento inteiro, e você fica com um registro
+com erro para limpar.
+
+### Se você já monta a lista de exames por conta
+
+Quem já resolve a grade do próprio lado pode pedir a cobertura direto na
+listagem, passando os ids que pretende marcar:
+
+```bash
+curl -s -H "X-API-Key: $SIGA_API_KEY" \
+  "$SIGA_API_BASE/api/v1/agendas/disponiveis?organizacaoId=org_0QNQBJRD9JKVW&procedimentoIds=pro_0QNQBJRD9JKVW,pro_0QNQBJRD9JKVX"
+```
+
+Cada agenda volta com o mesmo bloco `cobertura`. **`procedimentoIds` não filtra
+a lista** — todas as agendas continuam aparecendo, cada uma dizendo o que
+atende e o que falta. Some da lista seria pior: você não saberia por quê.
+
+Três leituras que evitam retrabalho:
+
+- **`tiposExameIds` vazio = a agenda aceita todos os tipos de exame.** Lista
+  vazia não é "nenhum". Vale igual para `procedimentos`: agenda sem
+  procedimento declarado atende todos, e por isso aparece com
+  `cobertura.completa: true`.
+- **`exameClinico` fica fora da cobertura.** Ele é ato médico, não procedimento
+  de catálogo, e nenhuma agenda o declara — não o trate como exame faltante.
+- Estas rotas já aplicam os dois recortes que o agendamento vai conferir depois:
+  a agenda estar liberada para a empresa **e** a clínica atender aquela empresa.
   O que aparece aqui é o que o passo 7 aceita.
+
+:::note[Por que por pessoa e não por cargo]
+A grade não sai do cargo sozinho: ela soma organização → setor → cargo e ainda
+aplica recortes de sexo e idade. Uma consulta por cargo daria a resposta errada
+para todo colaborador cuja recomendação vem de um nível acima — que é a maioria.
+Por isso o endereço é `pessoaId`.
+:::
 
 ---
 

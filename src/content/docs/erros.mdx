@@ -59,9 +59,11 @@ Parecem o mesmo erro ("não pode agendar aqui"), mas se corrigem em cadastros
 diferentes: a liberação é da **agenda**, a abrangência é da **clínica**. Um único
 erro mandaria o operador procurar no lugar errado — por isso são dois.
 
-**Como evitar os dois:** use sempre `GET /agendas/disponiveis?organizacaoId=…`
+**Como evitar os dois:** use sempre `GET /agendas/para-colaborador?pessoaId=…`
 para escolher. Essa rota aplica exatamente os mesmos recortes que o agendamento
-confere, então o que ela lista é o que o agendamento aceita.
+confere, então o que ela lista é o que o agendamento aceita — e ainda diz se a
+agenda cobre todos os exames recomendados, que é o terceiro jeito de a
+solicitação ser recusada.
 
 ## 429: como tratar direito
 

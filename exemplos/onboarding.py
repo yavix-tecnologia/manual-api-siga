@@ -117,12 +117,20 @@ def main():
     )
     print(f"3. Colaborador: {pessoa['nomeCompleto']} ({pessoa['id']})")
 
-    # 4. Agendas liberadas. Esta rota aplica os mesmos recortes que o agendamento
-    #    confere depois — o que aparece aqui é o que o passo 6 aceita.
-    agendas = siga("/agendas/disponiveis", query={"organizacaoId": org["id"]})
-    if not agendas:
+    # 4. Agendas que servem ESTE colaborador, ja com a cobertura da grade dele.
+    #    Esta rota aplica os mesmos recortes que o agendamento confere depois — o
+    #    que aparece aqui e o que o passo 6 aceita — e ordena as de cobertura
+    #    completa primeiro.
+    opcoes = siga("/agendas/para-colaborador", query={"pessoaId": pessoa["id"]})
+    if not opcoes["agendas"]:
         sys.exit("Nenhuma agenda liberada para esta empresa. Fale com o time de SST.")
-    agenda = agendas[0]
+    agenda = opcoes["agendas"][0]
+    # Parar aqui e deliberado: uma clinica que atende so parte dos exames faz a
+    # origem recusar o atendimento inteiro, e sobra um registro com erro para
+    # limpar. Quase sempre e o exame que nao esta vinculado a clinica nenhuma.
+    if opcoes["nenhumaCompleta"]:
+        falta = ", ".join(p["nome"] for p in agenda["cobertura"]["faltantes"])
+        sys.exit(f"Nenhuma agenda cobre a grade inteira — falta: {falta}. Fale com o time de SST.")
     print(f"4. Agenda: {agenda['nome']} — {agenda['clinicaNome']}")
 
     # 5. Atendimento. Sem "exames", vale a grade recomendada pelo PCMSO para o

@@ -58,6 +58,19 @@ interface Pessoa {
 }
 
 /** Lista de tipos de exame VAZIA significa "aceita todos" — não "nenhum". */
+interface Procedimento {
+  id: string;
+  nome: string;
+}
+
+/** O que a agenda atende da grade pedida. `faltantes` vazio = cobre tudo. */
+interface Cobertura {
+  completa: boolean;
+  totalPedidos: number;
+  atendidos: Procedimento[];
+  faltantes: Procedimento[];
+}
+
 interface Agenda {
   id: string;
   nome: string;
@@ -65,6 +78,17 @@ interface Agenda {
   clinicaNome: string;
   tiposExameIds: string[];
   ativo: boolean;
+  cobertura: Cobertura;
+}
+
+interface AgendasParaColaborador {
+  cargoNome: string | null;
+  /** Ato médico, não procedimento de catálogo: fica fora da cobertura. */
+  exameClinico: boolean;
+  procedimentos: Procedimento[];
+  agendas: Agenda[];
+  /** Nenhuma agenda cobre a grade inteira — não mande a solicitação. */
+  nenhumaCompleta: boolean;
 }
 
 interface Atendimento {
@@ -180,9 +204,20 @@ async function main(): Promise<void> {
   );
   console.log(`3. Colaborador: ${pessoa.nomeCompleto} (${pessoa.id})`);
 
-  const agendas = await siga<Agenda[]>('/agendas/disponiveis', { query: { organizacaoId: org.id } });
-  const agenda = agendas[0];
+  // Agendas que servem ESTE colaborador, com a cobertura da grade dele e as de
+  // cobertura completa primeiro.
+  const opcoes = await siga<AgendasParaColaborador>('/agendas/para-colaborador', {
+    query: { pessoaId: pessoa.id },
+  });
+  const agenda = opcoes.agendas[0];
   if (!agenda) throw new Error('Nenhuma agenda liberada para esta empresa.');
+  // Parar aqui é deliberado: uma clínica que atende só parte dos exames faz a
+  // origem recusar o atendimento inteiro, e sobra um registro com erro para
+  // limpar. Quase sempre é o exame que não está vinculado a clínica nenhuma.
+  if (opcoes.nenhumaCompleta) {
+    const falta = agenda.cobertura.faltantes.map((p) => p.nome).join(', ');
+    throw new Error(`Nenhuma agenda cobre a grade inteira — falta: ${falta}.`);
+  }
   console.log(`4. Agenda: ${agenda.nome} — ${agenda.clinicaNome}`);
 
   let atendimento: Atendimento;

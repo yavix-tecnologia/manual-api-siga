@@ -115,11 +115,20 @@ async function main() {
   );
   console.log(`3. Colaborador: ${pessoa.nomeCompleto} (${pessoa.id})`);
 
-  // 4. Agendas liberadas. Esta rota aplica os mesmos recortes que o agendamento
-  //    confere depois — o que aparece aqui é o que o passo 6 aceita.
-  const agendas = await siga('/agendas/disponiveis', { query: { organizacaoId: org.id } });
-  const agenda = agendas[0];
+  // 4. Agendas que servem ESTE colaborador, já com a cobertura da grade dele.
+  //    Esta rota aplica os mesmos recortes que o agendamento confere depois — o
+  //    que aparece aqui é o que o passo 6 aceita — e ordena as de cobertura
+  //    completa primeiro.
+  const opcoes = await siga('/agendas/para-colaborador', { query: { pessoaId: pessoa.id } });
+  const agenda = opcoes.agendas[0];
   if (!agenda) throw new Error('Nenhuma agenda liberada para esta empresa. Fale com o time de SST.');
+  // Parar aqui é deliberado: uma clínica que atende só parte dos exames faz a
+  // origem recusar o atendimento inteiro, e sobra um registro com erro para
+  // limpar. Quase sempre é o exame que não está vinculado a clínica nenhuma.
+  if (opcoes.nenhumaCompleta) {
+    const falta = agenda.cobertura.faltantes.map((p) => p.nome).join(', ');
+    throw new Error(`Nenhuma agenda cobre a grade inteira — falta: ${falta}. Fale com o time de SST.`);
+  }
   console.log(`4. Agenda: ${agenda.nome} — ${agenda.clinicaNome}`);
 
   // 5. Atendimento. Sem `exames`, vale a grade recomendada pelo PCMSO para o
