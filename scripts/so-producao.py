@@ -10,5 +10,5 @@ import sys
 
 caminho = sys.argv[1]
 spec = json.load(open(caminho, encoding="utf-8"))
-spec["servers"] = [{"url": "https://api-sst.yavix.app", "description": "Producao"}]
+spec["servers"] = [{"url": "https://api-siga.yavix.app", "description": "Producao"}]
 json.dump(spec, open(caminho, "w", encoding="utf-8"), ensure_ascii=False, indent=2)

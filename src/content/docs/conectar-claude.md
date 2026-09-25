@@ -34,11 +34,11 @@ empresas, mesmos tenants, mesmas permissões.
 ## 2. Conectar o Claude Code
 
 ```bash
-claude mcp add --transport http siga https://api-sst.yavix.app/mcp \
+claude mcp add --transport http siga https://api-siga.yavix.app/mcp \
   --header "Authorization: Bearer yvxmcp_SEU_TOKEN"
 ```
 
-No ambiente de desenvolvimento, troque o host por `devapi-sst.yavix.app`.
+No ambiente de desenvolvimento, troque o host por `dev-api-siga.yavix.com.br`.
 
 Depois, em qualquer sessão do Claude Code, é só perguntar. Para conferir a
 conexão, use `/mcp`.
@@ -53,7 +53,7 @@ Em **Configurações → Desenvolvedor → Editar configuração**, acrescente:
     "siga": {
       "command": "npx",
       "args": [
-        "-y", "mcp-remote", "https://api-sst.yavix.app/mcp",
+        "-y", "mcp-remote", "https://api-siga.yavix.app/mcp",
         "--header", "Authorization: Bearer yvxmcp_SEU_TOKEN"
       ]
     }

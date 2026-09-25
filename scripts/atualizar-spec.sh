@@ -8,11 +8,11 @@
 # fora do ar, e para que a versão publicada seja auditável.
 #
 #   ./scripts/atualizar-spec.sh                       # produção
-#   SIGA_API_BASE=https://devapi-sst.yavix.app ./scripts/atualizar-spec.sh
+#   SIGA_API_BASE=https://dev-api-siga.yavix.com.br ./scripts/atualizar-spec.sh
 #
 set -euo pipefail
 
-BASE="${SIGA_API_BASE:-https://api-sst.yavix.app}"
+BASE="${SIGA_API_BASE:-https://api-siga.yavix.app}"
 DESTINO="public/openapi.json"
 
 echo "Baixando de ${BASE}/openapi.json…"

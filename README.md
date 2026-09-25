@@ -50,7 +50,7 @@ npm run build    # gera dist/, igual ao que o Netlify publica
 
 ```bash
 export SIGA_API_KEY="yvx_..."                     # chave de sandbox
-export SIGA_API_BASE="https://api-sst.yavix.app"
+export SIGA_API_BASE="https://api-siga.yavix.app"
 
 node exemplos/onboarding.js
 python exemplos/onboarding.py

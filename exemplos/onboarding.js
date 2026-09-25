@@ -13,7 +13,7 @@
  * novo é pedido ao time de SST.
  */
 
-const BASE = process.env.SIGA_API_BASE || 'https://api-sst.yavix.app';
+const BASE = process.env.SIGA_API_BASE || 'https://api-siga.yavix.app';
 const API_KEY = process.env.SIGA_API_KEY;
 
 if (!API_KEY) {

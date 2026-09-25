@@ -6,14 +6,14 @@
  * Os tipos abaixo cobrem só os campos usados neste fluxo. Para os contratos
  * completos, gere a partir do spec:
  *
- *   npx openapi-typescript https://api-sst.yavix.app/openapi.json -o siga.d.ts
+ *   npx openapi-typescript https://api-siga.yavix.app/openapi.json -o siga.d.ts
  *
  * O que este exemplo NÃO faz de propósito: criar setor ou cargo. Eles são o
  * endereço da matriz de riscos no SIGA — cargo criado pela integração aceita
  * vínculo mas nasce sem grade de exames, e o problema só aparece no ASO.
  */
 
-const BASE = process.env.SIGA_API_BASE ?? 'https://api-sst.yavix.app';
+const BASE = process.env.SIGA_API_BASE ?? 'https://api-siga.yavix.app';
 const API_KEY = process.env.SIGA_API_KEY;
 
 if (!API_KEY) {

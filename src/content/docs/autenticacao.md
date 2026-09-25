@@ -11,7 +11,7 @@ Toda chamada leva a chave no header `X-API-Key`:
 
 ```http
 POST /api/v1/pessoas HTTP/1.1
-Host: api-sst.yavix.app
+Host: api-siga.yavix.app
 X-API-Key: yvx_0QNQBJRD9JKVWXYZ_exemplo_nao_use_esta_chave
 Content-Type: application/json
 ```
@@ -88,7 +88,7 @@ Todos os exemplos deste manual leem a chave de variável de ambiente:
 
 ```bash
 export SIGA_API_KEY="yvx_..."
-export SIGA_API_BASE="https://api-sst.yavix.app"
+export SIGA_API_BASE="https://api-siga.yavix.app"
 ```
 
 ## Limite de requisições

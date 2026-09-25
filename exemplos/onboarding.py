@@ -20,7 +20,7 @@ from datetime import date, timedelta
 
 import requests
 
-BASE = os.environ.get("SIGA_API_BASE", "https://api-sst.yavix.app")
+BASE = os.environ.get("SIGA_API_BASE", "https://api-siga.yavix.app")
 API_KEY = os.environ.get("SIGA_API_KEY")
 
 if not API_KEY:
