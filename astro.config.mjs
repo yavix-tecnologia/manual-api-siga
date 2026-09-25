@@ -47,6 +47,7 @@ export default defineConfig({
             { label: 'Autenticação', link: '/autenticacao/' },
             { label: 'Tutorial de 10 minutos', link: '/tutorial/' },
             { label: 'Enviar o resultado do exame', link: '/enviar-resultado/' },
+            { label: 'Conectar o Claude (MCP)', link: '/conectar-claude/' },
           ],
         },
         {
