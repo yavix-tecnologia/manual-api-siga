@@ -68,8 +68,9 @@ Use o Claude Code ou o Claude Desktop.
 
 ## O que o Claude consegue consultar
 
-49 consultas sobre **empresas, pessoas e dependentes, atendimentos e exames,
-dashboard, tarefas (cards), quadros e métricas, e tenants** — cada uma é um
+54 consultas sobre **empresas, pessoas e dependentes, atendimentos e exames,
+dashboard, tarefas (cards), quadros e métricas, tenants, e estatísticas de
+pesquisas e saúde mental** (só números agregados — nunca a resposta de uma pessoa) — cada uma é um
 endpoint da API, com os mesmos filtros. Além delas, o Claude lê um guia de
 consultas, glossários de atendimentos e de tarefas, e quem é o dono do token.
 
