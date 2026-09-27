@@ -35,7 +35,7 @@ empresas, mesmos tenants, mesmas permissões.
 
 ```bash
 claude mcp add --transport http siga https://api-siga.yavix.app/mcp \
-  --header "Authorization: Bearer yvxmcp_SEU_TOKEN"
+  --header "x-access-token: yvxmcp_SEU_TOKEN"
 ```
 
 No ambiente de desenvolvimento, troque o host por `dev-api-siga.yavix.com.br`.
@@ -54,7 +54,7 @@ Em **Configurações → Desenvolvedor → Editar configuração**, acrescente:
       "command": "npx",
       "args": [
         "-y", "mcp-remote", "https://api-siga.yavix.app/mcp",
-        "--header", "Authorization: Bearer yvxmcp_SEU_TOKEN"
+        "--header", "x-access-token: yvxmcp_SEU_TOKEN"
       ]
     }
   }
