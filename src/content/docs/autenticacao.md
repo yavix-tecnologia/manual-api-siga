@@ -161,11 +161,11 @@ Até a v0.5.3.0 este header se chamava **`X-API-Token`**. O nome antigo foi
 
 - **O token não mudou.** Só o nome do header. Para migrar, troque `X-API-Token`
   por `X-API-Leads` e mantenha o mesmo valor.
-- **O que a chamada antiga recebe:** status **401** com esta mensagem:
+- **O que a chamada antiga recebe:** status **401**, com o código `HEADER_RENOMEADO` no campo `error`, para a integração conseguir identificar o caso:
 
   ```json
   {
-    "error": "Unauthorized",
+    "error": "HEADER_RENOMEADO",
     "message": "O header X-API-Token foi renomeado para X-API-Leads. Envie o mesmo token em X-API-Leads.",
     "timestamp": "2026-09-28T15:00:00.000Z"
   }
