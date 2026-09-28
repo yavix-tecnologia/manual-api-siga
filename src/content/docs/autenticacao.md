@@ -151,8 +151,24 @@ O `X-API-Leads` aceita um de dois valores:
 curl -X POST "$SIGA_API_BASE/api/v1/leads/form-supermercados" \
   -H "X-API-Leads: $SIGA_LEADS_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"cnpj":"…","nomeCompleto":"…","cpf":"…","dataNascimento":"1990-01-31","sexo":"M","email":"…","telefoneCelular":"…"}'
+  -d '{"tenantId":"ten_…","cnpj":"…","nomeCompleto":"…","cpf":"…","dataNascimento":"1990-01-31","sexo":"M","email":"…","telefoneCelular":"…"}'
 ```
+
+### Em qual tenant o lead entra: campo `tenantId`
+
+O corpo das duas rotas aceita o campo opcional **`tenantId`**, com o id do tenant
+no formato `ten_...`.
+
+| O que vem na chamada | Tenant em que o lead é gravado |
+|---|---|
+| `tenantId` preenchido | o tenant informado. O CNPJ só liga o lead a uma empresa **desse** tenant |
+| sem `tenantId` e CNPJ de uma única empresa (só em `POST /api/v1/leads`) | o tenant dessa empresa |
+| sem `tenantId`, em qualquer outro caso | **DOZE** |
+
+- `tenantId` que não existe ou está inativo: **400** `TENANT_INVALIDO`.
+- Com a `X-API-Key` de uma pessoa, o tenant precisa estar na hierarquia dela.
+  Se não estiver: **403** `TENANT_ESCRITA_NEGADA`. O token de leads da
+  integração aceita qualquer tenant ativo.
 
 :::danger[Mudança incompatível em 28/09/2026 (API v0.5.4.0): `X-API-Token` virou `X-API-Leads`]
 Até a v0.5.3.0 este header se chamava **`X-API-Token`**. O nome antigo foi
