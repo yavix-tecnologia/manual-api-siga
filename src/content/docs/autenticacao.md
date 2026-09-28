@@ -122,3 +122,58 @@ curl -s -o /dev/null -w "%{http_code}\n" \
 
 `200` — tudo certo. `401` — chave ausente, inválida ou revogada. `403` — a chave é
 válida, mas o perfil não tem a permissão daquela rota.
+
+## Captação de leads: header `X-API-Leads`
+
+A captação de leads tem um header próprio, `X-API-Leads`, e ele vale **só** em
+duas rotas:
+
+| Rota | Para quê |
+|---|---|
+| `POST /api/v1/leads` | cadastro de solicitação |
+| `POST /api/v1/leads/{slug}` | captação por campanha (o `slug` é o código do formulário) |
+
+Nas outras rotas o `X-API-Leads` é ignorado. As outras rotas de leads, como
+listar e qualificar, usam o `X-API-Key` normal.
+
+O `X-API-Leads` aceita um de dois valores:
+
+1. **Token de leads da integração.** É entregue pela Yavix fora de banda. Não
+   pertence a nenhuma pessoa e não tem perfil: o próprio token autoriza, e só
+   nessas duas rotas. Ele fica configurado no servidor da API, não no banco. Por
+   isso não aparece na tela de usuários e não pode ser revogado por lá. Para
+   trocá-lo, peça à Yavix.
+2. **A sua `X-API-Key` (`yvx_...`).** Nesse caso o perfil da pessoa dona da chave
+   vale, e ele precisa ter a permissão `leads:criar`. Sem ela, a resposta é
+   **403**.
+
+```bash
+curl -X POST "$SIGA_API_BASE/api/v1/leads/form-supermercados" \
+  -H "X-API-Leads: $SIGA_LEADS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"cnpj":"…","nomeCompleto":"…","cpf":"…","dataNascimento":"1990-01-31","sexo":"M","email":"…","telefoneCelular":"…"}'
+```
+
+:::danger[Mudança incompatível em 28/09/2026 (API v0.5.4.0): `X-API-Token` virou `X-API-Leads`]
+Até a v0.5.3.0 este header se chamava **`X-API-Token`**. O nome antigo foi
+**removido sem período de transição**: desde a v0.5.4.0 a API **não aceita mais
+`X-API-Token`**, nem com um token válido.
+
+- **O token não mudou.** Só o nome do header. Para migrar, troque `X-API-Token`
+  por `X-API-Leads` e mantenha o mesmo valor.
+- **O que a chamada antiga recebe:** status **401** com esta mensagem:
+
+  ```json
+  {
+    "error": "Unauthorized",
+    "message": "O header X-API-Token foi renomeado para X-API-Leads. Envie o mesmo token em X-API-Leads.",
+    "timestamp": "2026-09-28T15:00:00.000Z"
+  }
+  ```
+
+- **A tentativa fica registrada** na auditoria. O suporte consegue ver quais
+  integrações ainda mandam o header antigo.
+- **Se os dois headers vierem juntos**, vale o `X-API-Leads` e o `X-API-Token` é
+  ignorado.
+- **Sem nenhum dos dois**, a resposta é **401** `X-API-Leads header obrigatório`.
+:::
